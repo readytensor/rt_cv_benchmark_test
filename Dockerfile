@@ -1,5 +1,5 @@
 # use an NVIDIA CUDA base image
-FROM nvidia/cuda:12.3.1-devel-ubuntu20.04 as builder
+FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 as builder
 # Install OS dependencies
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
     ca-certificates \
