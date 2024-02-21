@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 from config import paths
@@ -11,6 +12,8 @@ from models.custom_trainer import CustomTrainer
 from utils import TimeAndMemoryTracker
 from logger import get_logger
 from pathlib import Path
+
+warnings.filterwarnings("ignore")
 
 
 def create_prediction_df(

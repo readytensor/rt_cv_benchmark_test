@@ -1,3 +1,4 @@
+import warnings
 import torch
 from models.dataloader import CustomDataLoader
 from models.custom_trainer import CustomTrainer
@@ -16,6 +17,7 @@ from score import (
 from logger import get_logger
 
 logger = get_logger(__file__)
+warnings.filterwarnings("ignore")
 
 
 def run_training(
