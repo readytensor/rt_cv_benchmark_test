@@ -7,7 +7,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # install python and pip and add symbolic link to python3
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
-    python3.9 \
+    python3.11 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/python3 /usr/bin/python
@@ -29,6 +29,7 @@ ENV PYTHONUNBUFFERED=TRUE
 ENV PYTHONDONTWRITEBYTECODE=TRUE
 ENV PATH="/opt/src:${PATH}"
 ENV TORCH_HOME="/opt"
+ENV MPLCONFIGDIR="/opt"
 
 RUN chmod 777 /opt
 
