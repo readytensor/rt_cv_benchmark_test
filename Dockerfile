@@ -28,6 +28,7 @@ WORKDIR /opt/src
 ENV PYTHONUNBUFFERED=TRUE
 ENV PYTHONDONTWRITEBYTECODE=TRUE
 ENV PATH="/opt/src:${PATH}"
+ENV TORCH_HOME="/opt"
 # set non-root user
 USER 1000
 # set entrypoint
