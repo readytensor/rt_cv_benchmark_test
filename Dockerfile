@@ -26,6 +26,16 @@ RUN wget https://www.python.org/ftp/python/3.11.0/Python-3.11.0.tgz \
 # Cleanup the source
 RUN rm -rf Python-3.11.0.tgz Python-3.11.0
 
+# Install and upgrade pip for Python 3.11
+RUN wget https://bootstrap.pypa.io/get-pip.py \
+    && python3.11 get-pip.py \
+    && python3.11 -m pip install --upgrade pip \
+    && rm get-pip.py
+
+# Add a symbolic link to python3 (optional)
+RUN ln -s /usr/local/bin/python3.11 /usr/local/bin/python3 \
+    && ln -s /usr/local/bin/python3.11 /usr/local/bin/python
+
 # Install pip for Python 3.11
 RUN wget https://bootstrap.pypa.io/get-pip.py \
     && python3.11 get-pip.py \
