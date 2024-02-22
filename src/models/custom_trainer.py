@@ -124,6 +124,7 @@ class CustomTrainer(BaseTrainer):
             "model_name": self.model_name,
             "output_folder": self.output_folder,
         }
+        os.makedirs(predictor_path, exist_ok=True)
         params_path = os.path.join(predictor_path, "model_params.joblib")
         model_path = os.path.join(predictor_path, "model_state.pth")
         joblib.dump(model_params, params_path)
