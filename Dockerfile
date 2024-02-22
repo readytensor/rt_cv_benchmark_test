@@ -4,6 +4,7 @@ FROM nvidia/cuda:12.3.1-runtime-ubuntu20.04 as builder
 # Install build dependencies
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    dos2unix \
     wget \
     build-essential \
     libffi-dev \
