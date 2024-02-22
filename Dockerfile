@@ -58,7 +58,7 @@ ENV PATH="/opt/src:${PATH}"
 ENV TORCH_HOME="/opt"
 ENV MPLCONFIGDIR="/opt"
 
-RUN chmod 777 /opt
+RUN chmod -R 777 /opt
 
 # set non-root user
 USER 1000
