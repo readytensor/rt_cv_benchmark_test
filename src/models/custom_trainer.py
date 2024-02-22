@@ -35,7 +35,7 @@ supported_weights = {
 }
 
 
-def get_optimizer(optimizer: str) -> type[Optimizer]:
+def get_optimizer(optimizer: str) -> Optimizer:
     supported_optimizers = {"adam": torch.optim.Adam, "sgd": torch.optim.SGD}
 
     if optimizer not in supported_optimizers.keys():

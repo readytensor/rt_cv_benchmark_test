@@ -90,8 +90,8 @@ class BaseTrainer:
     def update_metrics_history_dict(
         self,
         phase: str,
-        metrics_history: dict[str, list],
-        score_dict: dict,
+        metrics_history: Dict[str, list],
+        score_dict: Dict,
         epoch_num: int = None,
     ):
         if epoch_num:
