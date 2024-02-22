@@ -36,7 +36,9 @@ RUN_ALL_PREDICTIONS_DIR = os.path.join(PREDICTIONS_DIR, "run_all_predictions")
 
 ERRORS_DIR = os.path.join(OUTPUTS_DIR, "errors")
 
-MODEL_ARTIFACTS_DIR = os.path.join(MODEL_INPUTS_OUTPUTS_DIR, "artifacts")
+MODEL_DIR = os.path.join(MODEL_INPUTS_OUTPUTS_DIR, "model")
+
+MODEL_ARTIFACTS_DIR = os.path.join(MODEL_DIR, "artifacts")
 
 DATA_SPLIT_DIR = os.path.join(MODEL_ARTIFACTS_DIR, "data_split")
 
@@ -47,7 +49,6 @@ MODEL_DATA_FILE_PATH = os.path.join(MODEL_ARTIFACTS_DIR, "model_data.joblib")
 CHECKPOINTS_DIR = os.path.join(MODEL_ARTIFACTS_DIR, "checkpoints")
 
 RUN_ALL_ARTIFACTS_DIR = os.path.join(MODEL_ARTIFACTS_DIR, "run_all_artifacts")
-
 
 
 # LOGS_DIR = os.path.join(ROOT_DIR, "logs")

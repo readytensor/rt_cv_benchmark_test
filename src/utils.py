@@ -236,6 +236,10 @@ class TimeAndMemoryTracker(object):
         self.logger = logger
 
     def __enter__(self):
+        if T.cuda.is_available():
+            T.cuda.reset_peak_memory_stats()  # Reset CUDA memory stats
+            T.cuda.empty_cache()  # Clear CUDA cache
+
         tracemalloc.start()
         self.start_time = time.time()
         return self
