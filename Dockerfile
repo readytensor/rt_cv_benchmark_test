@@ -63,6 +63,6 @@ RUN chown -R 1000:1000 /opt
 RUN chmod -R 777 /opt
 
 # set non-root user
-# USER 1000
+USER 1000
 # set entrypoint
 ENTRYPOINT ["/opt/entry_point.sh"]
