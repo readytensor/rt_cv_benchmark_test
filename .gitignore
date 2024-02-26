@@ -149,3 +149,5 @@ output/*.pth
 .DS_Store
 raw_data/
 test.*
+*.jpg
+*.jpeg

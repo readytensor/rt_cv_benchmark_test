@@ -68,6 +68,9 @@ class CustomTrainer(BaseTrainer):
         model_name,
         optimizer: str = "adam",
         lr: float = 0.001,
+        early_stopping: bool = True,
+        early_stopping_patience: int = 10,
+        early_stopping_delta: float = 0.05,
         output_folder=paths.OUTPUTS_DIR,
     ):
         """
@@ -90,6 +93,7 @@ class CustomTrainer(BaseTrainer):
         self.num_classes = num_classes
         self.model_name = model_name
         self.output_folder = output_folder
+        self.lr = lr
 
         model_fn = supported_models[model_name]
         model_weights = supported_weights[model_name]
@@ -104,18 +108,39 @@ class CustomTrainer(BaseTrainer):
             in_features = model.fc.in_features
             model.fc = nn.Linear(in_features, num_classes)
 
+        self.model = model
+        self.optimizer = get_optimizer(optimizer)(self.model.parameters(), lr=lr)
+
         super().__init__(
             model,
             train_loader,
             test_loader,
             validation_loader,
+            early_stopping=early_stopping,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_delta=early_stopping_delta,
             output_folder=output_folder,
         )
 
-        self.lr = lr
-        self.optimizer = get_optimizer(optimizer)(self.model.parameters(), lr=lr)
+    def save_model(self, predictor_path: str = paths.PREDICTOR_DIR) -> None:
+        """
+        Saves the model's state dictionary and training parameters to the specified path.
 
-    def save_model(self, predictor_path=paths.PREDICTOR_DIR):
+        This method creates the directory if it doesn't exist and saves two files: one with
+        the model's parameters (such as data loaders, number of classes, model name, and
+        output folder) and another with the model's state dictionary. The parameters are
+        saved in a joblib file, and the model's state is saved in a PyTorch file.
+
+        Parameters:
+        - predictor_path (str, optional): The directory path where the model parameters
+          and state are to be saved. Defaults to paths.PREDICTOR_DIR.
+
+        Note:
+        - The method assumes 'paths.PREDICTOR_DIR' is a valid directory path defined in
+          the 'config' module.
+        - This method does not return anything.
+        """
+        os.makedirs(predictor_path, exist_ok=True)
         model_params = {
             "train_loader": self.train_loader,
             "test_loader": self.test_loader,
@@ -124,14 +149,22 @@ class CustomTrainer(BaseTrainer):
             "model_name": self.model_name,
             "output_folder": self.output_folder,
         }
-        os.makedirs(predictor_path, exist_ok=True)
         params_path = os.path.join(predictor_path, "model_params.joblib")
         model_path = os.path.join(predictor_path, "model_state.pth")
         joblib.dump(model_params, params_path)
         torch.save(self.model.state_dict(), model_path)
 
     @staticmethod
-    def load_model(predictor_path=paths.PREDICTOR_DIR):
+    def load_model(predictor_path: str = paths.PREDICTOR_DIR) -> "CustomTrainer":
+        """
+        Loads a pretrained model and its training configuration from a specified path.
+
+        Args:
+        - predictor_path (str): Path to the directory with model's parameters and state. Defaults to paths.PREDICTOR_DIR.
+
+        Returns:
+        - CustomTrainer: A trainer object with the loaded model and training configuration.
+        """
         params_path = os.path.join(predictor_path, "model_params.joblib")
         model_path = os.path.join(predictor_path, "model_state.pth")
         params = joblib.load(params_path)

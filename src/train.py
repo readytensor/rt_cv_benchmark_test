@@ -1,6 +1,5 @@
-import warnings
 import torch
-from models.dataloader import CustomDataLoader
+from torch_utils.dataloader import CustomDataLoader
 from models.custom_trainer import CustomTrainer
 from utils import (
     read_json_as_dict,
@@ -17,14 +16,13 @@ from score import (
 from logger import get_logger
 
 logger = get_logger(__file__)
-warnings.filterwarnings("ignore")
 
 
 def run_training(
     train_folder_path: str = paths.INPUTS_DIR,
     hyperparameters_file_path: str = paths.HYPERPARAMETERS_FILE,
     config_file_path: str = paths.CONFIG_FILE,
-):
+) -> None:
     logger.info("Starting training...")
 
     logger.info("Loading config file...")
@@ -42,6 +40,9 @@ def run_training(
     loss_choice = config.get("loss_function")
     num_workers = config.get("num_workers")
     validation_size = config.get("validation_size")
+    early_stopping = config.get("early_stopping")
+    early_stopping_patience = config.get("early_stopping_patience")
+    early_stopping_delta = config.get("early_stopping_delta")
 
     batch_size = params.get("batch_size")
     image_size = params.get("image_size")
@@ -73,6 +74,9 @@ def run_training(
         model_name=model_name,
         optimizer=optimizer,
         lr=lr,
+        early_stopping=early_stopping,
+        early_stopping_patience=early_stopping_patience,
+        early_stopping_delta=early_stopping_delta,
     )
 
     logger.info(f"Using device {device}")

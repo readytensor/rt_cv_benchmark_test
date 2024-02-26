@@ -2,6 +2,7 @@
 
 import os
 import torch
+import warnings
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -19,8 +20,10 @@ from sklearn.metrics import (
     average_precision_score,
 )
 from sklearn.preprocessing import label_binarize
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union
 from torch.nn.modules.loss import CrossEntropyLoss, MultiMarginLoss
+
+warnings.filterwarnings("ignore")
 
 
 def save_metrics_to_csv(
@@ -225,7 +228,7 @@ def evaluate_metrics(
     probabilities: np.ndarray,
     loss_function: Union[CrossEntropyLoss, MultiMarginLoss],
     top_k: List[int],
-    n_classes: int,
+    class_names: List[str],
 ) -> Dict[str, float]:
     """
     Evaluates loss, accuracy, recall, precision, f1-score and top k accuracy on given labels and predictions.
@@ -236,37 +239,63 @@ def evaluate_metrics(
         - probabilities (np.ndarray): Predicted probabilities of class labels.
         - loss_function (Union[CrossEntropyLoss, MultiMarginLoss]): The loss function.
         - top_k (List[int]): The values to use for k when calculating top k accuracy.
-        - n_classes (int): The number of classes in the multiclass classification problem.
+        - class_names (List[str]0: The names of the classes in the multiclass classification problem.
 
     Returns (Dict[str]): The calculated metrics.
     """
+    n_classes = len(class_names)
     torch_labels = torch.from_numpy(labels).long()
-    predictions = torch.from_numpy(predictions)
     torch_probabilities = torch.from_numpy(probabilities)
     loss = loss_function(torch_probabilities, torch_labels).item()
 
     accuracy = accuracy_score(y_pred=predictions, y_true=labels)
-    macro_recall = recall_score(y_pred=predictions, y_true=labels, average="macro")
+    macro_recall = recall_score(
+        y_pred=predictions,
+        y_true=labels,
+        average="macro",
+        labels=range(n_classes),
+        zero_division=1,
+    )
     weighted_recall = recall_score(
-        y_pred=predictions, y_true=labels, average="weighted"
+        y_pred=predictions,
+        y_true=labels,
+        average="weighted",
+        labels=range(n_classes),
+        zero_division=1,
     )
     macro_precision = precision_score(
-        y_pred=predictions, y_true=labels, average="macro"
+        y_pred=predictions, y_true=labels, average="macro", zero_division=1
     )
     weighted_precision = precision_score(
-        y_pred=predictions, y_true=labels, average="weighted"
+        y_pred=predictions, y_true=labels, average="weighted", zero_division=1
     )
-    macro_f1 = f1_score(y_pred=predictions, y_true=labels, average="macro")
-    weighted_f1 = f1_score(y_pred=predictions, y_true=labels, average="weighted")
+    macro_f1 = f1_score(
+        y_pred=predictions,
+        y_true=labels,
+        average="macro",
+        labels=range(n_classes),
+        zero_division=1,
+    )
+    weighted_f1 = f1_score(
+        y_pred=predictions,
+        y_true=labels,
+        average="weighted",
+        labels=range(n_classes),
+        zero_division=1,
+    )
 
     mean_average_precision = mean_average_precision_score(
-        labels=labels, predicted_probabilities=probabilities, n_classes=n_classes
+        labels=labels,
+        predicted_probabilities=probabilities,
+        n_classes=n_classes,
     )
     top_k_accuracy = {}
 
     for k in top_k:
-        score = top_k_accuracy_score(y_score=probabilities, y_true=labels, k=k)
-        top_k_accuracy[k] = score
+        score = top_k_accuracy_score(
+            y_score=probabilities, y_true=labels, k=k, labels=range(n_classes)
+        )
+    top_k_accuracy[k] = score
 
     result = {
         "loss": loss,

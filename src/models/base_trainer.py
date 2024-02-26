@@ -11,6 +11,10 @@ from torch.optim.lr_scheduler import LambdaLR
 from score import evaluate_metrics
 from torch.nn import CrossEntropyLoss, MultiMarginLoss
 from torch.nn.functional import softmax
+from torch_utils.early_stopping import EarlyStopping
+from logger import get_logger
+
+logger = get_logger(task_name="model")
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -24,6 +28,9 @@ class BaseTrainer:
         test_loader,
         validation_loader,
         num_samples=20,
+        early_stopping: bool = True,
+        early_stopping_patience: int = 10,
+        early_stopping_delta: float = 0.05,
         loss_function=torch.nn.CrossEntropyLoss(),
         output_folder=paths.OUTPUTS_DIR,
     ):
@@ -35,6 +42,9 @@ class BaseTrainer:
         self.loss_function = loss_function
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.num_samples = num_samples
+        self.early_stopping = early_stopping
+        self.early_stopping_patience = early_stopping_patience
+        self.early_stopping_delta = early_stopping_delta
         self.model.to(self.device)
         os.makedirs(self.output_folder, exist_ok=True)
 
@@ -71,7 +81,24 @@ class BaseTrainer:
         """
         self.loss_function = loss_function
 
-    def create_metrics_history_dict(self, phase: str):
+    def create_metrics_history_dict(self, phase: str) -> Dict[str, List]:
+        """
+        Creates a dictionary to track the history of various metrics for a given phase.
+
+        This method initializes a dictionary with lists to keep track of epoch numbers and
+        various metrics such as loss, accuracy, macro recall, macro precision, macro F1 score,
+        weighted recall, weighted precision, weighted F1 score, top-k accuracy, and mean
+        average precision for the specified phase (e.g., training, validation, or testing).
+
+        Parameters:
+        - phase (str): The phase for which the metrics are being tracked. Typically, this
+          would be 'train', 'validation', or 'test'.
+
+        Returns:
+        - Dict[str, List]: A dictionary with keys for each metric to be tracked, where each
+          key maps to a list for recording the history of that metric over epochs.
+        """
+
         metrics_history = {
             "epoch": [],
             f"{phase} loss": [],
@@ -90,10 +117,10 @@ class BaseTrainer:
     def update_metrics_history_dict(
         self,
         phase: str,
-        metrics_history: Dict[str, list],
-        score_dict: Dict,
+        metrics_history: dict[str, list],
+        score_dict: dict,
         epoch_num: int = None,
-    ):
+    ) -> Dict[str, List]:
         if epoch_num:
             metrics_history["epoch"].append(epoch_num)
         for key in metrics_history.keys():
@@ -130,6 +157,12 @@ class BaseTrainer:
             lr_lambda=self._warmup_cosine_annealing(0.001, warmup_epochs, num_epochs),
         )
 
+        early_stopper = EarlyStopping(
+            patience=self.early_stopping_patience,
+            delta=self.early_stopping_delta,
+            trace_func=logger.info,
+        )
+
         total_batches = len(self.train_loader)
         metrics_history = self.create_metrics_history_dict(phase="train")
 
@@ -138,7 +171,7 @@ class BaseTrainer:
 
         best_val_accuracy = 0.0  # Initialize best validation accuracy
         for epoch in range(num_epochs):
-            print(f"Starting epoch {epoch + 1}/{num_epochs}")
+            logger.info(f"Starting epoch {epoch + 1}/{num_epochs}")
             running_loss = 0.0
             train_progress_bar = tqdm(
                 total=total_batches, desc=f"Training - Epoch {epoch + 1}/{num_epochs}"
@@ -161,7 +194,7 @@ class BaseTrainer:
                     probabilities=probs.data.cpu().numpy(),
                     loss_function=self.loss_function,
                     top_k=[5],
-                    n_classes=self.num_classes,
+                    class_names=self.class_names,
                 )
                 self.optimizer.step()
                 running_loss += loss.item()
@@ -174,30 +207,39 @@ class BaseTrainer:
                 epoch_num=epoch + 1,
             )
 
-            # if self.validation_loader:
-            #     val_labels, val_pred, val_prob = self.predict(self.validation_loader)
-            #     val_metrics = evaluate_metrics(
-            #         val_labels,
-            #         val_pred,
-            #         val_prob,
-            #         self.loss_function,
-            #         top_k=[5],
-            #         n_classes=self.num_classes,
-            #     )
-            #     # Checkpointing
-            #     if val_metrics["accuracy"] > best_val_accuracy:
-            #         best_val_accuracy = val_metrics["accuracy"]
-            #         self._save_checkpoint(epoch, checkpoint_dir_path)
+            if self.validation_loader:
+                val_labels, val_pred, val_prob = self.predict(self.validation_loader)
+                val_metrics = evaluate_metrics(
+                    val_labels,
+                    val_pred,
+                    val_prob,
+                    self.loss_function,
+                    top_k=[5],
+                    n_classes=self.num_classes,
+                )
+                # Checkpointing
+                if val_metrics["accuracy"] > best_val_accuracy:
+                    best_val_accuracy = val_metrics["accuracy"]
+                    self._save_checkpoint(epoch, checkpoint_dir_path)
 
-            #     metrics_history = self.update_metrics_history_dict(
-            #         phase="validation",
-            #         metrics_history=metrics_history,
-            #         score_dict=val_metrics,
-            #     )
-            #     print(f"Validation metrics after epoch {epoch}: {val_metrics}")
+                metrics_history = self.update_metrics_history_dict(
+                    phase="validation",
+                    metrics_history=metrics_history,
+                    score_dict=val_metrics,
+                )
+                logger.info(f"Validation metrics after epoch {epoch}: {val_metrics}")
 
-            print(f"Training metrics after epoch {epoch}: {train_metrics}")
+            logger.info(f"Training metrics after epoch {epoch}: {train_metrics}")
             scheduler.step()
+
+            if self.early_stopping:
+                loss = (
+                    metrics_history["validation loss"][-1]
+                    if self.validation_loader
+                    else metrics_history["train loss"][-1]
+                )
+                if early_stopper(loss):
+                    break
 
         train_progress_bar.close()
 
@@ -215,7 +257,7 @@ class BaseTrainer:
             output_folder, f"model_checkpoint_epoch_{epoch}.pth"
         )
         torch.save(self.model.state_dict(), checkpoint_path)
-        print(f"Checkpoint saved to {checkpoint_path}")
+        logger.info(f"Checkpoint saved to {checkpoint_path}")
 
     def _warmup_cosine_annealing(self, base_lr, warmup_epochs, num_epochs):
         def lr_lambda(epoch):
