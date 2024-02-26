@@ -254,6 +254,7 @@ class BaseTrainer:
             epoch (int): The current epoch number.
             output_folder (str): The directory where the checkpoint will be saved.
         """
+        os.makedirs(output_folder, exist_ok=True)
         checkpoint_path = os.path.join(
             output_folder, f"model_checkpoint_epoch_{epoch}.pth"
         )
