@@ -174,27 +174,27 @@ class BaseTrainer:
                 epoch_num=epoch + 1,
             )
 
-            if self.validation_loader:
-                val_labels, val_pred, val_prob = self.predict(self.validation_loader)
-                val_metrics = evaluate_metrics(
-                    val_labels,
-                    val_pred,
-                    val_prob,
-                    self.loss_function,
-                    top_k=[5],
-                    n_classes=self.num_classes,
-                )
-                # Checkpointing
-                if val_metrics["accuracy"] > best_val_accuracy:
-                    best_val_accuracy = val_metrics["accuracy"]
-                    self._save_checkpoint(epoch, checkpoint_dir_path)
+            # if self.validation_loader:
+            #     val_labels, val_pred, val_prob = self.predict(self.validation_loader)
+            #     val_metrics = evaluate_metrics(
+            #         val_labels,
+            #         val_pred,
+            #         val_prob,
+            #         self.loss_function,
+            #         top_k=[5],
+            #         n_classes=self.num_classes,
+            #     )
+            #     # Checkpointing
+            #     if val_metrics["accuracy"] > best_val_accuracy:
+            #         best_val_accuracy = val_metrics["accuracy"]
+            #         self._save_checkpoint(epoch, checkpoint_dir_path)
 
-                metrics_history = self.update_metrics_history_dict(
-                    phase="validation",
-                    metrics_history=metrics_history,
-                    score_dict=val_metrics,
-                )
-                print(f"Validation metrics after epoch {epoch}: {val_metrics}")
+            #     metrics_history = self.update_metrics_history_dict(
+            #         phase="validation",
+            #         metrics_history=metrics_history,
+            #         score_dict=val_metrics,
+            #     )
+            #     print(f"Validation metrics after epoch {epoch}: {val_metrics}")
 
             print(f"Training metrics after epoch {epoch}: {train_metrics}")
             scheduler.step()
