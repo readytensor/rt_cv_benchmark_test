@@ -194,7 +194,7 @@ class BaseTrainer:
                     probabilities=probs.data.cpu().numpy(),
                     loss_function=self.loss_function,
                     top_k=[5],
-                    class_names=self.class_names,
+                    n_classes=self.num_classes,
                 )
                 self.optimizer.step()
                 running_loss += loss.item()

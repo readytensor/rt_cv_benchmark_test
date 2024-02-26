@@ -228,7 +228,7 @@ def evaluate_metrics(
     probabilities: np.ndarray,
     loss_function: Union[CrossEntropyLoss, MultiMarginLoss],
     top_k: List[int],
-    class_names: List[str],
+    n_classes: int,
 ) -> Dict[str, float]:
     """
     Evaluates loss, accuracy, recall, precision, f1-score and top k accuracy on given labels and predictions.
@@ -239,11 +239,10 @@ def evaluate_metrics(
         - probabilities (np.ndarray): Predicted probabilities of class labels.
         - loss_function (Union[CrossEntropyLoss, MultiMarginLoss]): The loss function.
         - top_k (List[int]): The values to use for k when calculating top k accuracy.
-        - class_names (List[str]0: The names of the classes in the multiclass classification problem.
+        - n_classes (int): Number of classes in the multiclass classification problem.
 
     Returns (Dict[str]): The calculated metrics.
     """
-    n_classes = len(class_names)
     torch_labels = torch.from_numpy(labels).long()
     torch_probabilities = torch.from_numpy(probabilities)
     loss = loss_function(torch_probabilities, torch_labels).item()
