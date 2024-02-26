@@ -6,13 +6,9 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm  # Import tqdm for progress bars
 from config import paths
-from preprocessing.train_validation_split import (
-    split_and_move_validation_files,
-    get_image_paths_and_labels,
-)
 from utils import contains_subdirectories
 
 
@@ -44,7 +40,6 @@ class CustomDataLoader:
         (self.train_loader, self.test_loader, self.validation_loader) = (
             self.create_data_loaders()
         )
-        self.num_classes = len(self.train_loader.dataset.classes)
 
     def create_data_loaders(self):
 
@@ -56,18 +51,18 @@ class CustomDataLoader:
             validation_folder
         ) and contains_subdirectories(validation_folder)
 
-        image_paths, image_labels = get_image_paths_and_labels(train_folder)
-
-        if self.validation_size > 0 and not validation_exists:
-            split_and_move_validation_files(
-                image_paths=image_paths,
-                image_labels=image_labels,
-                validation_size=self.validation_size,
-            )
-            validation_exists = True
-
         train_dataset = ImageFolder(root=train_folder, transform=self.transform)
         test_dataset = ImageFolder(root=test_folder, transform=self.transform)
+        self.num_classes = len(train_dataset.classes)
+        self.class_names = train_dataset.classes
+
+        if self.validation_size > 0 and not validation_exists:
+            val_size = int(len(train_dataset) * self.validation_size)
+            train_size = len(train_dataset) - val_size
+            train_dataset, validation_dataset = random_split(
+                train_dataset, [train_size, val_size]
+            )
+            validation_exists = True
 
         train_loader = DataLoader(
             train_dataset,
@@ -86,17 +81,12 @@ class CustomDataLoader:
         validation_loader = None
 
         if validation_exists:
-            validation_dataset = ImageFolder(
-                root=validation_folder, transform=self.transform
-            )
-
             validation_loader = DataLoader(
                 validation_dataset,
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.num_workers,
             )
-
         return train_loader, test_loader, validation_loader
 
     @staticmethod

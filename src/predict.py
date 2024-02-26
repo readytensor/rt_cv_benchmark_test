@@ -87,7 +87,7 @@ def predict():
         phase="test",
         model_name=trainer.__class__.__name__,
         output_folder=paths.PREDICTIONS_DIR,
-        class_names=trainer.train_loader.dataset.classes,
+        class_names=trainer.class_names,
     )
 
     logger.info(

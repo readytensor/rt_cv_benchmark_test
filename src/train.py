@@ -111,7 +111,7 @@ def run_training(
         phase="train",
         model_name=trainer.__class__.__name__,
         output_folder=paths.MODEL_ARTIFACTS_DIR,
-        class_names=trainer.train_loader.dataset.classes,
+        class_names=trainer.class_names,
     )
 
     if data_loader.validation_loader:

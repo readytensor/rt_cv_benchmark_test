@@ -7,6 +7,7 @@ from typing import Tuple
 from config import paths
 from typing import Union, Dict, List
 from torch.utils.data.dataloader import DataLoader
+from torch.utils.data import Subset
 from torch.optim.lr_scheduler import LambdaLR
 from score import evaluate_metrics
 from torch.nn import CrossEntropyLoss, MultiMarginLoss
@@ -49,10 +50,10 @@ class BaseTrainer:
         os.makedirs(self.output_folder, exist_ok=True)
 
         # Initialize class names from train loader if available
-        if hasattr(train_loader.dataset, "classes"):
-            self.class_names = train_loader.dataset.classes
+        if isinstance(train_loader.dataset, Subset):
+            self.class_names = train_loader.dataset.dataset.classes
         else:
-            self.class_names = [str(i) for i in range(len(train_loader.dataset))]
+            self.class_names = train_loader.dataset.classes
 
         self.num_classes = len(self.class_names)
 
