@@ -131,7 +131,7 @@ def run_training(
             phase="validation",
             model_name=model_name,
             output_folder=paths.MODEL_ARTIFACTS_DIR,
-            class_names=trainer.train_loader.dataset.classes,
+            class_names=trainer.class_names,
         )
 
         logger.info(
