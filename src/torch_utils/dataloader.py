@@ -1,13 +1,14 @@
 import os
 import random
 import logging
+import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split
-from tqdm import tqdm  # Import tqdm for progress bars
+from torch.utils.data import DataLoader, random_split, Subset
+from tqdm import tqdm
 from config import paths
 from utils import contains_subdirectories
 
@@ -57,10 +58,10 @@ class CustomDataLoader:
         self.class_names = train_dataset.classes
 
         if self.validation_size > 0 and not validation_exists:
+
             val_size = int(len(train_dataset) * self.validation_size)
-            train_size = len(train_dataset) - val_size
-            train_dataset, validation_dataset = random_split(
-                train_dataset, [train_size, val_size]
+            train_dataset, validation_dataset = stratified_split_to_dataloaders(
+                train_dataset, val_split=val_size
             )
             validation_exists = True
 
@@ -136,6 +137,29 @@ class CustomDataLoader:
                 logging.info(
                     f"Saved {os.path.basename(image_path)} for {dataset_name} dataset"
                 )
+
+
+def stratified_split_to_dataloaders(
+    dataset, val_split=0.1, batch_size=64, shuffle_train=True, shuffle_val=True
+):
+    # Ensure dataset.targets is available; if not, you might need to access dataset.targets in a different way depending on the dataset
+    targets = np.array([dataset.targets[i] for i in range(len(dataset))])
+    classes, class_counts = np.unique(targets, return_counts=True)
+    class_indices = [np.where(targets == i)[0] for i in classes]
+
+    train_indices, val_indices = [], []
+
+    for indices in class_indices:
+        np.random.shuffle(indices)
+        split = int(len(indices) * val_split)
+        val_indices.extend(indices[:split])
+        train_indices.extend(indices[split:])
+
+    # Creating the subsets
+    train_subset = Subset(dataset, train_indices)
+    val_subset = Subset(dataset, val_indices)
+
+    return train_subset, val_subset
 
 
 # Script runs only when executed directly
