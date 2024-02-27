@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from config import paths
 from utils import contains_subdirectories
@@ -139,7 +139,6 @@ class CustomDataLoader:
 
 
 def stratified_split_to_dataloaders(dataset, val_size=0.1):
-    # Ensure dataset.targets is available; if not, you might need to access dataset.targets in a different way depending on the dataset
     targets = np.array([dataset.targets[i] for i in range(len(dataset))])
     classes, class_counts = np.unique(targets, return_counts=True)
     class_indices = [np.where(targets == i)[0] for i in classes]
