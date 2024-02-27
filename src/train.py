@@ -56,39 +56,39 @@ def run_training(
     )
     logger.info(f"Setting seeds to: {config['seed']}")
     set_seeds(config["seed"])
-
-    logger.info("Creating data loader...")
-    data_loader = CustomDataLoader(
-        base_folder=train_folder_path,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        image_size=image_size,
-        validation_size=validation_size,
-    )
-
-    trainer = CustomTrainer(
-        data_loader.train_loader,
-        data_loader.test_loader,
-        data_loader.validation_loader,
-        num_classes=data_loader.num_classes,
-        model_name=model_name,
-        optimizer=optimizer,
-        lr=lr,
-        early_stopping=early_stopping,
-        early_stopping_patience=early_stopping_patience,
-        early_stopping_delta=early_stopping_delta,
-    )
-
-    logger.info(f"Using device {device}")
-    trainer.set_device(device)
-    trainer.set_loss_function(loss_function)
-
-    logger.info("Training model...")
     with TimeAndMemoryTracker(logger) as _:
+        logger.info("Creating data loader...")
+        data_loader = CustomDataLoader(
+            base_folder=train_folder_path,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            image_size=image_size,
+            validation_size=validation_size,
+        )
+
+        trainer = CustomTrainer(
+            data_loader.train_loader,
+            data_loader.test_loader,
+            data_loader.validation_loader,
+            num_classes=data_loader.num_classes,
+            model_name=model_name,
+            optimizer=optimizer,
+            lr=lr,
+            early_stopping=early_stopping,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_delta=early_stopping_delta,
+        )
+
+        logger.info(f"Using device {device}")
+        trainer.set_device(device)
+        trainer.set_loss_function(loss_function)
+
+        logger.info("Training model...")
+
         metrics_history = trainer.train(num_epochs=num_epochs)
 
-    logger.info("Saving model...")
-    trainer.save_model()
+        logger.info("Saving model...")
+        trainer.save_model()
 
     logger.info("Saving training metrics to csv...")
     save_metrics_to_csv(

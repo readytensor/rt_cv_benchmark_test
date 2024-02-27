@@ -61,7 +61,6 @@ class CustomDataLoader:
             train_dataset, validation_dataset = stratified_split_to_dataloaders(
                 train_dataset, val_size=self.validation_size
             )
-            print(len(train_dataset))
             validation_exists = True
 
         train_loader = DataLoader(
