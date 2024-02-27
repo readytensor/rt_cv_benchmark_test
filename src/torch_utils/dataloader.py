@@ -58,11 +58,10 @@ class CustomDataLoader:
         self.class_names = train_dataset.classes
 
         if self.validation_size > 0 and not validation_exists:
-
-            val_size = int(len(train_dataset) * self.validation_size)
             train_dataset, validation_dataset = stratified_split_to_dataloaders(
-                train_dataset, val_split=val_size
+                train_dataset, val_size=self.validation_size
             )
+            print(len(train_dataset))
             validation_exists = True
 
         train_loader = DataLoader(
@@ -139,9 +138,7 @@ class CustomDataLoader:
                 )
 
 
-def stratified_split_to_dataloaders(
-    dataset, val_split=0.1, batch_size=64, shuffle_train=True, shuffle_val=True
-):
+def stratified_split_to_dataloaders(dataset, val_size=0.1):
     # Ensure dataset.targets is available; if not, you might need to access dataset.targets in a different way depending on the dataset
     targets = np.array([dataset.targets[i] for i in range(len(dataset))])
     classes, class_counts = np.unique(targets, return_counts=True)
@@ -151,7 +148,7 @@ def stratified_split_to_dataloaders(
 
     for indices in class_indices:
         np.random.shuffle(indices)
-        split = int(len(indices) * val_split)
+        split = int(len(indices) * val_size)
         val_indices.extend(indices[:split])
         train_indices.extend(indices[split:])
 
