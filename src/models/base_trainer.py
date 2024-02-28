@@ -192,58 +192,58 @@ class BaseTrainer:
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
 
-                train_metrics = evaluate_metrics(
-                    labels=labels.cpu().numpy(),
-                    predictions=predicted.cpu().numpy(),
-                    probabilities=probs.detach().cpu().numpy(),
-                    loss_function=self.loss_function,
-                    top_k=[5],
-                    n_classes=self.num_classes,
-                )
+                # train_metrics = evaluate_metrics(
+                #     labels=labels.cpu().numpy(),
+                #     predictions=predicted.cpu().numpy(),
+                #     probabilities=probs.detach().cpu().numpy(),
+                #     loss_function=self.loss_function,
+                #     top_k=[5],
+                #     n_classes=self.num_classes,
+                # )
                 self.optimizer.step()
                 running_loss += loss.item()
                 train_progress_bar.update(1)
 
-            metrics_history = self.update_metrics_history_dict(
-                phase="train",
-                metrics_history=metrics_history,
-                score_dict=train_metrics,
-                epoch_num=epoch + 1,
-            )
+            # metrics_history = self.update_metrics_history_dict(
+            #     phase="train",
+            #     metrics_history=metrics_history,
+            #     score_dict=train_metrics,
+            #     epoch_num=epoch + 1,
+            # )
 
-            if self.validation_loader:
-                val_labels, val_pred, val_prob = self.predict(self.validation_loader)
-                val_metrics = evaluate_metrics(
-                    val_labels,
-                    val_pred,
-                    val_prob,
-                    self.loss_function,
-                    top_k=[5],
-                    n_classes=self.num_classes,
-                )
-                # Checkpointing
-                if val_metrics["accuracy"] > best_val_accuracy:
-                    best_val_accuracy = val_metrics["accuracy"]
-                    self._save_checkpoint(epoch, checkpoint_dir_path)
+            # if self.validation_loader:
+            #     val_labels, val_pred, val_prob = self.predict(self.validation_loader)
+            #     val_metrics = evaluate_metrics(
+            #         val_labels,
+            #         val_pred,
+            #         val_prob,
+            #         self.loss_function,
+            #         top_k=[5],
+            #         n_classes=self.num_classes,
+            #     )
+            # Checkpointing
+            # if val_metrics["accuracy"] > best_val_accuracy:
+            #     best_val_accuracy = val_metrics["accuracy"]
+            #     self._save_checkpoint(epoch, checkpoint_dir_path)
 
-                metrics_history = self.update_metrics_history_dict(
-                    phase="validation",
-                    metrics_history=metrics_history,
-                    score_dict=val_metrics,
-                )
-                logger.info(f"Validation metrics after epoch {epoch}: {val_metrics}")
+            # metrics_history = self.update_metrics_history_dict(
+            #     phase="validation",
+            #     metrics_history=metrics_history,
+            #     score_dict=val_metrics,
+            # )
+            # logger.info(f"Validation metrics after epoch {epoch}: {val_metrics}")
 
-            logger.info(f"Training metrics after epoch {epoch}: {train_metrics}")
+            # logger.info(f"Training metrics after epoch {epoch}: {train_metrics}")
             scheduler.step()
 
-            if self.early_stopping:
-                loss = (
-                    metrics_history["validation loss"][-1]
-                    if self.validation_loader
-                    else metrics_history["train loss"][-1]
-                )
-                if early_stopper(loss):
-                    break
+            # if self.early_stopping:
+            #     loss = (
+            #         metrics_history["validation loss"][-1]
+            #         if self.validation_loader
+            #         else metrics_history["train loss"][-1]
+            #     )
+            #     if early_stopper(loss):
+            #         break
 
         train_progress_bar.close()
 
