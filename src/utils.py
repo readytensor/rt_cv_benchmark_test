@@ -9,7 +9,6 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Union
 from config import paths
-from torch.profiler import profile, ProfilerActivity
 
 
 def read_json_as_dict(input_path: str) -> Dict:
@@ -267,51 +266,3 @@ def running_sum(memory_events):
     for mem in memory_events[1:]:
         r_sum.append(r_sum[-1] + mem)
     return r_sum
-
-
-class ProfileModelCreation:
-    def __init__(
-        self,
-        logger,
-        activities=[ProfilerActivity.CPU],
-        profile_memory=True,
-        record_shapes=True,
-    ):
-        self.logger = logger
-        self.activities = activities
-        self.profile_memory = profile_memory
-        self.record_shapes = record_shapes
-
-    def __enter__(self):
-        self.start_time = time.time()  # Record start time
-        self.profiler = profile(
-            activities=self.activities,
-            profile_memory=self.profile_memory,
-            record_shapes=self.record_shapes,
-        )
-        self.profiler.__enter__()  # Start the profiler
-        return self  # Return the context manager itself if needed
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.profiler.__exit__(exc_type, exc_val, exc_tb)  # Stop the profiler
-        total_memory = max(
-            running_sum(
-                [event.cpu_memory_usage for event in self.profiler.key_averages()]
-            )
-        )
-        self.logger(f"Peak CPU Memory Allocated: {total_memory / (1024 ** 2)} MB")
-        if ProfilerActivity.CUDA in self.activities:
-            total_cuda_memory = max(
-                running_sum(
-                    [event.cuda_memory_usage for event in self.profiler.key_averages()]
-                )
-            )
-            self.logger(
-                f"Peak CUDA Memory Allocated: {total_cuda_memory / (1024 ** 2)} MB"
-            )
-        self.logger(
-            self.profiler.key_averages().table(sort_by="cpu_memory_usage", row_limit=10)
-        )
-
-        elapsed_time = time.time() - self.start_time  # Calculate elapsed time
-        self.logger(f"Elapsed time: {elapsed_time:.2f} seconds")

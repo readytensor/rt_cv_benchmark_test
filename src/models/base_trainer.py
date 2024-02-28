@@ -185,7 +185,9 @@ class BaseTrainer:
                 gc.collect()
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
+                print(torch.cuda.max_memory_allocated())
                 outputs = self.model(inputs)
+                print(torch.cuda.max_memory_allocated())
                 if isinstance(outputs, tuple):
                     outputs = outputs[0]
 

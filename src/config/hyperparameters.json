@@ -209,7 +209,7 @@
             "short_desc": "The number of samples per batch",
             "type": "int",
             "search_type": "uniform",
-            "default": 64,
+            "default": 128,
             "range_low": 32,
             "range_high": 512
         },
