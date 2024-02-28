@@ -14,6 +14,7 @@ from torch.nn import CrossEntropyLoss, MultiMarginLoss
 from torch.nn.functional import softmax
 from torch_utils.early_stopping import EarlyStopping
 from logger import get_logger
+from memory_profiler import profile
 
 logger = get_logger(task_name="model")
 
@@ -131,6 +132,7 @@ class BaseTrainer:
 
         return metrics_history
 
+    @profile
     def train(
         self, num_epochs: int = 40, checkpoint_dir_path: str = paths.CHECKPOINTS_DIR
     ) -> Dict[str, List]:
@@ -184,6 +186,7 @@ class BaseTrainer:
                 outputs = self.model(inputs)
                 if isinstance(outputs, tuple):
                     outputs = outputs[0]
+
                 probs = softmax(outputs, dim=1)
                 _, predicted = torch.max(outputs.data, 1)
                 loss = self.loss_function(outputs, labels)
@@ -192,7 +195,7 @@ class BaseTrainer:
                 train_metrics = evaluate_metrics(
                     labels=labels.cpu().numpy(),
                     predictions=predicted.cpu().numpy(),
-                    probabilities=probs.data.cpu().numpy(),
+                    probabilities=probs.detach().cpu().numpy(),
                     loss_function=self.loss_function,
                     top_k=[5],
                     n_classes=self.num_classes,
