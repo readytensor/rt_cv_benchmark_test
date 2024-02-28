@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from config import paths
 from utils import contains_subdirectories
