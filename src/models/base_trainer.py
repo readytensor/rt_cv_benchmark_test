@@ -15,6 +15,7 @@ from torch.nn.functional import softmax
 from torch_utils.early_stopping import EarlyStopping
 from logger import get_logger
 from memory_profiler import profile
+import gc
 
 logger = get_logger(task_name="model")
 
@@ -181,6 +182,7 @@ class BaseTrainer:
             )
 
             for inputs, labels in self.train_loader:
+                gc.collect()
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
