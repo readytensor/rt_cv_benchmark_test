@@ -5,7 +5,7 @@ from utils import (
     read_json_as_dict,
     set_seeds,
     get_model_parameters,
-    track_resources,
+    ResourceTracker,
 )
 from config import paths
 from score import (
@@ -14,7 +14,6 @@ from score import (
     calculate_confusion_matrix,
 )
 from logger import get_logger
-from memory_profiler import memory_usage
 
 
 logger = get_logger(__file__)
@@ -147,4 +146,6 @@ def run_training(
 
 
 if __name__ == "__main__":
-    track_resources(run_training, logger=logger.info)
+
+    with ResourceTracker(logger, monitoring_interval=5):
+        run_training()

@@ -9,7 +9,7 @@ from score import (
     save_metrics_to_csv,
 )
 from models.custom_trainer import CustomTrainer
-from utils import track_resources
+from utils import ResourceTracker
 from logger import get_logger
 from pathlib import Path
 
@@ -96,4 +96,5 @@ def predict():
 
 
 if __name__ == "__main__":
-    track_resources(predict, logger=logger.info)
+    with ResourceTracker(logger=logger, monitoring_interval=5):
+        predict()

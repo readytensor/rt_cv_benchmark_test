@@ -1,6 +1,8 @@
 import os
 import json
 import random
+import threading
+import psutil
 import torch as T
 import time
 import shutil
@@ -8,7 +10,6 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Union, Callable
 from config import paths
-from memory_profiler import memory_usage
 
 
 def read_json_as_dict(input_path: str) -> Dict:
@@ -214,6 +215,55 @@ def get_dataloader_parameters(config_dict: Dict) -> Dict:
     }
 
 
+class MemoryMonitor:
+    peak_memory = 0  # Class variable to store peak memory usage
+
+    def __init__(self, interval=20.0, logger=print):
+        self.interval = interval  # Time between executions in seconds
+        self.timer = None  # Placeholder for the timer object
+        self.logger = logger
+
+    def monitor_memory(self):
+        process = psutil.Process(os.getpid())
+        children = process.children(recursive=True)
+        total_memory = process.memory_info().rss
+
+        for child in children:
+            total_memory += child.memory_info().rss
+
+        # Check if the current memory usage is a new peak and update accordingly
+        MemoryMonitor.peak_memory = max(MemoryMonitor.peak_memory, total_memory)
+
+    def _schedule_monitor(self):
+        """Internal method to schedule the next execution"""
+        self.monitor_memory()
+        # Only reschedule if the timer has not been canceled
+        if self.timer is not None:
+            self.timer = threading.Timer(self.interval, self._schedule_monitor)
+            self.timer.start()
+
+    def start(self):
+        """Starts the periodic monitoring"""
+        if self.timer is not None:
+            return  # Prevent multiple timers from starting
+        self.timer = threading.Timer(self.interval, self._schedule_monitor)
+        self.timer.start()
+
+    def stop(self):
+        """Stops the periodic monitoring"""
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None
+        self.logger.info(
+            f"CPU Memory allocated (peak): {MemoryMonitor.peak_memory / (1024**2):.2f} MB"
+        )
+
+    @classmethod
+    def get_peak_memory(cls):
+        """Returns the peak memory usage"""
+        return cls.peak_memory
+
+
 def get_peak_memory_usage() -> Union[float, None]:
     """
     Returns the peak memory usage by current cuda device if available
@@ -226,35 +276,32 @@ def get_peak_memory_usage() -> Union[float, None]:
     return peak_memory / 1e6
 
 
-def track_resources(func: Callable, logger: Callable = print) -> None:
+class ResourceTracker(object):
     """
-    Tracks and logs the resource usage (execution time and memory) of a given function.
-
-    Parameters:
-        func (Callable): The function to be executed and tracked.
-        logger (Callable): A logging function to output the results. Defaults to `print`.
-
-    Returns:
-        None
-
-    This function tracks the execution time and peak memory usage (both CPU and CUDA, if available)
-    of the provided function `func`. It logs the results using the provided `logger` function.
+    This class serves as a context manager to track time and
+    memory allocated by code executed inside it.
     """
 
-    if T.cuda.is_available():
-        T.cuda.reset_peak_memory_stats()  # Reset CUDA memory stats
-        T.cuda.empty_cache()  # Clear CUDA cache
+    def __init__(self, logger, monitoring_interval):
+        self.logger = logger
+        self.monitor = MemoryMonitor(logger=logger, interval=monitoring_interval)
 
-    start_time = time.time()
+    def __enter__(self):
+        self.start_time = time.time()
+        if T.cuda.is_available():
+            T.cuda.reset_peak_memory_stats()  # Reset CUDA memory stats
+            T.cuda.empty_cache()  # Clear CUDA cache
 
-    cpu_peak_memory = memory_usage(func, max_usage=True)
+        self.monitor.start()
+        return self
 
-    end_time = time.time()
-    cuda_peak = get_peak_memory_usage()
-    elapsed_time = end_time - start_time
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.end_time = time.time()
+        self.monitor.stop()
+        cuda_peak = get_peak_memory_usage()
+        if cuda_peak:
+            self.logger.info(f"CUDA Memory allocated (peak): {cuda_peak:.2f} MB")
 
-    logger(f"Execution time: {elapsed_time:.2f} seconds")
-    logger(f"CPU Memory allocated (peak): { cpu_peak_memory:.2f} MB")
+        elapsed_time = self.end_time - self.start_time
 
-    if cuda_peak:
-        logger(f"CUDA Memory allocated (peak): {cuda_peak:.2f} MB")
+        self.logger.info(f"Execution time: {elapsed_time:.2f} seconds")
