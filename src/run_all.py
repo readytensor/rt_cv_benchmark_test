@@ -12,7 +12,7 @@ from score import (
     save_metrics_to_csv,
 )
 
-from utils import TimeAndMemoryTracker
+from utils import track_resources
 from logger import get_logger
 
 logger = get_logger(task_name="run_all")
@@ -192,5 +192,4 @@ def main():
 
 
 if __name__ == "__main__":
-    with TimeAndMemoryTracker(logger) as _:
-        main()
+    track_resources(main, logger=logger.info)

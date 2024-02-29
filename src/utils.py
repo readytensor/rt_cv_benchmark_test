@@ -4,11 +4,11 @@ import random
 import torch as T
 import time
 import shutil
-import tracemalloc
 import numpy as np
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Union, Callable
 from config import paths
+from memory_profiler import memory_usage
 
 
 def read_json_as_dict(input_path: str) -> Dict:
@@ -226,35 +226,35 @@ def get_peak_memory_usage() -> Union[float, None]:
     return peak_memory / 1e6
 
 
-class TimeAndMemoryTracker(object):
+def track_resources(func: Callable, logger: Callable = print) -> None:
     """
-    This class serves as a context manager to track time and
-    memory allocated by code executed inside it.
+    Tracks and logs the resource usage (execution time and memory) of a given function.
+
+    Parameters:
+        func (Callable): The function to be executed and tracked.
+        logger (Callable): A logging function to output the results. Defaults to `print`.
+
+    Returns:
+        None
+
+    This function tracks the execution time and peak memory usage (both CPU and CUDA, if available)
+    of the provided function `func`. It logs the results using the provided `logger` function.
     """
 
-    def __init__(self, logger):
-        self.logger = logger
+    if T.cuda.is_available():
+        T.cuda.reset_peak_memory_stats()  # Reset CUDA memory stats
+        T.cuda.empty_cache()  # Clear CUDA cache
 
-    def __enter__(self):
-        if T.cuda.is_available():
-            T.cuda.reset_peak_memory_stats()  # Reset CUDA memory stats
-            T.cuda.empty_cache()  # Clear CUDA cache
+    start_time = time.time()
 
-        tracemalloc.start()
-        self.start_time = time.time()
-        return self
+    cpu_peak_memory = memory_usage(func, max_usage=True)
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.end_time = time.time()
-        _, peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+    end_time = time.time()
+    cuda_peak = get_peak_memory_usage()
+    elapsed_time = end_time - start_time
 
-        cuda_peak = get_peak_memory_usage()
+    logger(f"Execution time: {elapsed_time:.2f} seconds")
+    logger(f"CPU Memory allocated (peak): { cpu_peak_memory:.2f} MB")
 
-        elapsed_time = self.end_time - self.start_time
-
-        self.logger.info(f"Execution time: {elapsed_time:.2f} seconds")
-        self.logger.info(f"CPU Memory allocated (peak): {peak / 1024**2:.2f} MB")
-
-        if cuda_peak:
-            self.logger.info(f"CUDA Memory allocated (peak): {cuda_peak:.2f} MB")
+    if cuda_peak:
+        logger(f"CUDA Memory allocated (peak): {cuda_peak:.2f} MB")

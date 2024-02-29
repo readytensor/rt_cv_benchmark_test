@@ -9,11 +9,13 @@ from score import (
     save_metrics_to_csv,
 )
 from models.custom_trainer import CustomTrainer
-from utils import TimeAndMemoryTracker
+from utils import track_resources
 from logger import get_logger
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
+
+logger = get_logger(task_name="predict")
 
 
 def create_prediction_df(
@@ -30,15 +32,13 @@ def create_prediction_df(
 
 
 def predict():
-    logger = get_logger(task_name="predict")
 
     trainer = CustomTrainer.load_model()
     logger.info(f"Loaded model {trainer.model_name}")
     test_loader = trainer.test_loader
 
     logger.info("Predicting on test data...")
-    with TimeAndMemoryTracker(logger) as _:
-        labels, predictions, probs = trainer.predict(test_loader)
+    labels, predictions, probs = trainer.predict(test_loader)
 
     ids = [Path(i[0]).name for i in test_loader.dataset.imgs]
     class_to_idx = test_loader.dataset.class_to_idx
@@ -96,4 +96,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    predict()
+    track_resources(predict, logger=logger.info)
