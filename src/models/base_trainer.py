@@ -14,7 +14,6 @@ from torch.nn import CrossEntropyLoss, MultiMarginLoss
 from torch.nn.functional import softmax
 from torch_utils.early_stopping import EarlyStopping
 from logger import get_logger
-from memory_profiler import profile
 
 logger = get_logger(task_name="model")
 
