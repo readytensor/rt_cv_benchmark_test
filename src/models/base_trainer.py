@@ -150,6 +150,7 @@ class BaseTrainer:
         }
         """
         # Ensure at least 1 warmup epoch
+        last_lr = self.lr
         warmup_epochs = max(1, num_epochs // 5)
         self.model.train()
 
@@ -233,6 +234,10 @@ class BaseTrainer:
 
             logger.info(f"Training metrics after epoch {epoch}: {train_metrics}")
             scheduler.step()
+            scheduler_lr = scheduler.get_last_lr()[0]
+            if last_lr != scheduler_lr:
+                logger.info(f"Learning rate set to {scheduler_lr}")
+                last_lr = scheduler_lr
 
             if self.early_stopping:
                 loss = (
