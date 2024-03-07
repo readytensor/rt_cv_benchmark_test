@@ -63,6 +63,11 @@ class CustomDataLoader:
             )
             validation_exists = True
 
+        elif validation_exists:
+            validation_dataset = ImageFolder(
+                root=validation_folder, transform=self.transform
+            )
+
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
